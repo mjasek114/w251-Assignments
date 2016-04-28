@@ -1,0 +1,14 @@
+same python program running on all 3 machines
+create a simple table for the 3 ranges of the letters
+you will know which server to look for the file
+ls -l /gpfs/gpfsfpo
+ssh gpfs2 'ls -l /gpfs/gpfsfpo'
+ssh gpfs3 'ls -l /gpfs/gpfsfpo'
+operating on gpfs1 and just call the other servers from there
+if you are on gpfs2 it can call to the other servers
+write to stdout
+redirect stdout back to first program
+grab the dictionary of words and counts
+convert dict to json and print to stdout
+gpfs1 can grab from stdout of gpfs2
+IPC options in python

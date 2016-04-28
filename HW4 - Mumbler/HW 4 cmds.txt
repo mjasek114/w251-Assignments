@@ -1,0 +1,117 @@
+You will need to obtain the GPFS tarball from us. Check the wall for a post about where to obtain credentials for the file GPFS_4.1_STD_LSX_QSG.tar.gz
+
+Knowing where each file is, however, should enable you to move compute (as part of your mumbler) to the data and minimize network chatter.
+
+slcli vs create -d sjc01 --os REDHAT_6_64 --cpu 2 --memory 4096 --disk 25 --disk 25 --hostname gpfs1 --domain berkeley.class.edu --key 'Megan_identifier_Jan_19'
+slcli vs create -d sjc01 --os REDHAT_6_64 --cpu 2 --memory 4096 --disk 25 --disk 25 --hostname gpfs2 --domain berkeley.class.edu --key 'Megan_identifier_Jan_19'
+slcli vs create -d sjc01 --os REDHAT_6_64 --cpu 2 --memory 4096 --disk 25 --disk 25 --hostname gpfs3 --domain berkeley.class.edu --key 'Megan_identifier_Jan_19'
+
+gpfs1: 50.23.100.242 : 10.54.18.210, Hxzd9lcf
+gpfs2: 50.23.100.251 : 10.54.18.217, Gk3f5Dx4
+gpfs3: 50.23.100.243 : 10.54.18.221, NxElkZd7
+
+scp /root/.ssh/id_rsa root@50.23.100.242:/root/.ssh
+scp /root/.ssh/id_rsa root@50.23.100.251:/root/.ssh
+scp /root/.ssh/id_rsa root@50.23.100.243:/root/.ssh
+
+# DOES THIS NEED TO BE DONE EVERY TIME I OPEN A NEW SSH SESSION!!
+export PATH=$PATH:/usr/lpp/mmfs/bin
+
+# previous /etc/hosts on gpfs1
+127.0.0.1 localhost.localdomain localhost
+50.23.100.242 gpfs1.berkeley.class.edu gpfs1
+
+/etc/hosts
+127.0.0.1       localhost.localdomain localhost
+10.54.18.210     gpfs1
+10.54.18.217     gpfs2
+10.54.18.221     gpfs3
+
+/root/nodefile
+gpfs1:quorum:
+gpfs2::
+gpfs3::
+
+wget http://b0a3.http.dal05.cdn.softlayer.net/brad-impact-demo-test/SaharaImage/GPFS_4.1_STD_LSX_QSG.tar
+From James:  Sharing the updated instructions since file was not compressed:
+tar -xvf GPFS_4.1_STD_LSX_QSG.tar 
+
+kernel gpfs1: 2.6.32-573.12.1.el6.x86_64
+kernel gpfs2: 2.6.32-573.12.1.el6.x86_64
+kernel gpfs2: 2.6.32-573.12.1.el6.x86_64
+
+
+cd /lib/modules/2.6.32-573.12.1.el6.x86_64
+rm -f build
+ln -sf /usr/src/kernels/2.6.32-573.12.1.el6.x86_64 build
+
+# Create the cluster, you need to make sure you export the PATH variable again to make the
+# mmcrcluster command work.
+export PATH=$PATH:/usr/lpp/mmfs/bin
+mmcrcluster -C dima -p gpfs1 -s gpfs2 -R /usr/bin/scp -r /usr/bin/ssh -N /root/nodefile
+
+# had to run mmcrcluster about 3 times and then it worked.
+[root@gpfs1 ~]# mmcrcluster -C dima -p gpfs1 -s gpfs2 -R /usr/bin/scp -r /usr/bin/ssh -N /root/nodefile
+mmcrcluster: Performing preliminary node verification ...
+mmcrcluster: Processing quorum and other critical nodes ...
+mmcrcluster: Processing the rest of the nodes ...
+The authenticity of host 'gpfs3 (10.54.18.221)' can't be established.
+RSA key fingerprint is bc:1c:0c:51:e4:f5:82:7a:20:2e:99:1f:58:c5:ef:2d.
+Are you sure you want to continue connecting (yes/no)? yes
+mmcrcluster: Finalizing the cluster data structures ...
+mmcrcluster: Command successfully completed
+mmcrcluster: Warning: Not all nodes have proper GPFS license designations.
+    Use the mmchlicense command to designate licenses as needed.
+mmcrcluster: Propagating the cluster configuration data to all
+  affected nodes.  This is an asynchronous process.
+
+[root@gpfs1 ~]# fdisk -l |grep Disk |grep bytes
+Disk /dev/xvdc: 26.8 GB, 26843545600 bytes
+Disk /dev/xvdb: 2147 MB, 2147483648 bytes
+Disk /dev/xvda: 26.8 GB, 26843545600 bytes
+
+# NOTE THE NAME OF DISK NAME FOR GPFS2
+[root@gpfs1 ~]# mmlsnsd -m
+ Disk name    NSD volume ID      Device         Node name                Remarks
+---------------------------------------------------------------------------------------
+ gpfs1nsd     0000000056AC4C01   /dev/xvdc      gpfs1                    server node
+ gpfs3nsd     0000000056AC4C06   /dev/xvdc      gpfs3                    server node
+ gpfs4nsd     0000000056AC4D9E   /dev/xvdc      gpfs2                    server node
+
+# NEEDED TO ADD THE NSD ATTRIBUTE HERE, NOTE MY GPFS2 NODE HAS A DIFFERENT NAME
+[root@gpfs1 ~]# cat /root/diskfile.fpo | more
+%pool:
+pool=system
+allowWriteAffinity=yes
+writeAffinityDepth=1
+
+%nsd:
+nsd=gpfs1nsd
+device=/dev/xvdc
+servers=gpfs1
+usage=dataAndMetadata
+pool=system
+failureGroup=1
+
+%nsd:
+nsd=gpfs4nsd
+device=/dev/xvdc
+servers=gpfs2
+usage=dataAndMetadata
+pool=system
+failureGroup=2
+
+%nsd:
+nsd=gpfs3nsd
+device=/dev/xvdc
+servers=gpfs3
+usage=dataAndMetadata
+pool=system
+failureGroup=3
+
+# EXAMPLES OF REMOTE COMMANDS
+ls -l /gpfs/gpfsfpo
+ssh gpfs2 'ls -l /gpfs/gpfsfpo'
+ssh gpfs3 'ls -l /gpfs/gpfsfpo'
+
+

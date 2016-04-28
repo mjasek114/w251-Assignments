@@ -1,0 +1,24 @@
+https://www.youtube.com/watch?v=CX0icQkq_MM
+
+GPFS docs:  http://publib.boulder.ibm.com/epubs/pdf/a2314521.pdf
+
+ssh gpfs2 'ls -l /gpfs/gpfsfpo'
+ssh gpfs3 'ls -l /gpfs/gpfsfpo'
+
+
+chmod +x get_grams
+gzip -d
+wget http://sourceforge.net/projects/nmon/files/nmon_linux_x86_64/download
+# had to install numpy as it was not there
+yum install numpy
+
+
+*********************
+• If you have a large set of data to copy, it might help to use all
+cluster nodes to share ingest workload. Use a write-affinity
+depth of 0, along with as many cluster nodes with storage as
+possible to copy data in parallel.
+A write-affinity depth of 0 ensures that each node
+distributes data across as many nodes as possible. GPFS
+policies can be used to enforce write-affinity depth settings
+based on fileset name, filename or other attributes.
